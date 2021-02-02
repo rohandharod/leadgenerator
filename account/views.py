@@ -10,11 +10,15 @@ from django.urls import reverse
 from django.contrib.sites.shortcuts import get_current_site
 from django.utils.encoding import force_bytes, force_text, DjangoUnicodeDecodeError
 from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
-from .utils import token_generator
+from .utils import token_generator, render_to_pdf
 from django.contrib.auth.base_user import BaseUserManager
 from .models import Leads
 from django.db.models import Case, When
 from django.http import FileResponse, Http404
+from django.template.loader import get_template
+from django.http import HttpResponse
+from io import BytesIO
+from django.core.files import File
 # def random_password(size=8):
 #     return BaseUserManager().make_random_password(size)
 from leadgenerator.settings import EMAIL_HOST_USER
@@ -103,6 +107,22 @@ def register(request):
             )
             email.send(fail_silently=False)
 
+            template = get_template('account/Agreement.html')
+            context = {
+            "partner_name" : user.first_name
+            }
+            html = template.render(context)
+            pdf = render_to_pdf('account/Agreement.html', context)
+
+            response = HttpResponse(pdf, content_type='application/pdf')
+            filename = "Agreement_%s.pdf" %(user.username)
+            content = "attachment; filename='%s'" %(filename)
+            # response['Content-Disposition'] = content
+            response['Content-Disposition'] = 'attachment; filename="report.pdf"'
+            
+
+
+            user.agreement.save(filename, File(BytesIO(pdf.content)))
 
             message="this is test mail"
             subject="terms and conditions"
@@ -115,8 +135,8 @@ def register(request):
             # file2=open("abcd.txt","r")
             # file=open("manage.py","r")
             # email.attach("abcd.txt",file2.read(),'text/plain')
-            # email.attach("manage.py",file.read(), 'text/plain')
-            email.attach_file('terms.pdf')
+            # email.attach("Agg.pdf",file.read(), 'text/plain')
+            email.attach_file("media/agreements/Agreement_" + user.username + ".pdf")
 
             email.send()
             # return render(request, 'account/terms.html')

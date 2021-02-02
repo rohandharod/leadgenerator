@@ -14,6 +14,7 @@ class CustomUser(AbstractUser):
     mapped_to = models.CharField(max_length=50)
     mapped_to_name = models.CharField(max_length=10)
     by_online = models.CharField(max_length=3)
+    agreement = models.FileField(upload_to='agreements')
 
 class Leads(models.Model):
     lead_id = models.AutoField(primary_key=True)
